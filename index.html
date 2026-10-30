@@ -1,0 +1,403 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Атомный навигатор</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;700&display=swap">
+<style>
+  /* Layout: зелёная главная на весь экран; три раздела с фиксированным нижним меню; переключение по #hash; блоки раскрываются по наведению */
+  :root {
+    --font-display: "Unbounded", "Arial Black", system-ui, sans-serif;
+    --font-body: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+    --bg: #f2f7f4;
+    --surface: #ffffff;
+    --ink: #0e2a1f;
+    --muted: #4a6657;
+    --line: #d3e3da;
+    --accent: #0c8a58;
+    --accent-soft: #dff3e8;
+    --on-accent: #ffffff;
+
+    --myth: #b42318;
+    --myth-soft: #fde8e5;
+    --coal: #d9382c;
+    --gas: #e08a00;
+    --sun: #1f78c8;
+    --atom: #0c8a58;
+    --track: #e6efe9;
+
+    --home-1: #04382a;
+    --home-2: #0a6b47;
+    --home-text: #f1fbf5;
+    --home-mint: #a8e6c6;
+    --nav-bg: #052f21;
+    --nav-text: #b9d8c8;
+    --nav-active: #ffffff;
+    --nav-active-bg: #0f6a47;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0b1511; --surface: #12211a; --ink: #e5f2ea; --muted: #97b2a3; --line: #23382d;
+      --accent: #3ccf93; --accent-soft: #143325; --on-accent: #06281b;
+      --myth: #ff8a7a; --myth-soft: #3a1b18;
+      --coal: #ff6b5e; --gas: #f5a524; --sun: #5aaef0; --atom: #3ccf93; --track: #1b2d24;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0b1511; --surface: #12211a; --ink: #e5f2ea; --muted: #97b2a3; --line: #23382d;
+    --accent: #3ccf93; --accent-soft: #143325; --on-accent: #06281b;
+    --myth: #ff8a7a; --myth-soft: #3a1b18;
+    --coal: #ff6b5e; --gas: #f5a524; --sun: #5aaef0; --atom: #3ccf93; --track: #1b2d24;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+  body[data-view="home"] { background: linear-gradient(160deg, var(--home-1), var(--home-2)); background-attachment: fixed; }
+
+  a { color: inherit; }
+  a:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+  .view { max-width: 720px; margin: 0 auto; padding-block: 20px 120px; }
+  .view[hidden] { display: none !important; }
+  .view:not([hidden]) { animation: view-in .4s cubic-bezier(.22,.8,.3,1) both; }
+  @keyframes view-in {
+    from { opacity: 0; transform: translateX(var(--dx, 0px)); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ---------- Главная ---------- */
+  .home {
+    position: relative;
+    overflow: hidden;
+    max-width: none;
+    margin: 0 -16px;
+    padding-inline: 16px;
+    min-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: var(--home-text);
+  }
+  .atom {
+    position: absolute;
+    left: 50%; top: 46%;
+    width: min(130vw, 640px);
+    aspect-ratio: 1;
+    max-width: none;
+    translate: -50% -50%;
+    pointer-events: none;
+    animation: spin 90s linear infinite;
+  }
+  @keyframes spin { to { rotate: 360deg; } }
+  .home-inner { position: relative; max-width: 560px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 22px; padding-bottom: 80px; }
+  .eyebrow {
+    font-size: 12px; font-weight: 500; letter-spacing: .22em; text-transform: uppercase;
+    padding: 7px 14px; border-radius: 999px;
+    background: rgba(255,255,255,.14); color: var(--home-text);
+  }
+  .home h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.4rem, 11vw, 4.6rem);
+    line-height: 1.02;
+    letter-spacing: -.01em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+  .rule { width: 56px; height: 4px; border-radius: 2px; background: var(--home-mint); }
+  .tagline { margin: 0; font-size: clamp(1.05rem, 3.6vw, 1.3rem); max-width: 30ch; color: #d9f3e5; text-wrap: balance; }
+  .school { margin: 6px 0 0; font-size: 13px; letter-spacing: .08em; color: var(--home-mint); }
+  .hint { margin: 0; font-size: 14px; color: #bfe6d1; }
+
+  /* ---------- Внутренние страницы ---------- */
+  .back {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); text-decoration: none; padding: 6px 0;
+  }
+  .back:hover { color: var(--accent); }
+  .page-head { margin: 14px 0 22px; padding-bottom: 14px; border-bottom: 3px solid var(--accent); }
+  h2 {
+    margin: 0;
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.5rem, 6vw, 2.1rem); line-height: 1.12; text-transform: uppercase; text-wrap: balance;
+  }
+  .lead { margin: 0 0 12px; font-size: 1.1rem; color: var(--muted); max-width: 52ch; }
+  .tip { margin: 0 0 20px; font-size: 13px; color: var(--muted); }
+  .foot-note {
+    margin: 28px 0 0; padding-top: 14px; border-top: 1px solid var(--line);
+    font-size: 14px; color: var(--muted);
+  }
+
+  /* ---------- Раскрывающиеся блоки ---------- */
+  .xp {
+    cursor: pointer;
+    transition: transform .35s cubic-bezier(.22,.8,.3,1), box-shadow .35s ease, border-color .3s ease, background-color .3s ease;
+  }
+  .more {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows .4s cubic-bezier(.22,.8,.3,1), opacity .3s ease;
+  }
+  .more > div { overflow: hidden; min-height: 0; }
+  .more p { margin: 0; padding-top: 12px; font-size: 15px; line-height: 1.55; color: var(--muted); }
+
+  .xp:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .xp:focus-visible, .xp.open {
+    border-color: var(--accent);
+    box-shadow: 0 10px 26px -14px rgba(5, 47, 33, .45);
+    transform: translateY(-2px);
+  }
+  .xp:focus-visible .more, .xp.open .more { grid-template-rows: 1fr; opacity: 1; }
+  @media (hover: hover) {
+    .xp:hover {
+      border-color: var(--accent);
+      box-shadow: 0 10px 26px -14px rgba(5, 47, 33, .45);
+      transform: translateY(-2px);
+    }
+    .xp:hover .more { grid-template-rows: 1fr; opacity: 1; }
+  }
+
+  /* Энергоплотность */
+  .callout { background: var(--accent-soft); border-radius: 14px; padding: 22px; margin-bottom: 14px; }
+  .callout .big { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.6rem, 7vw, 2.3rem); line-height: 1.1; color: var(--accent); }
+  .callout p { margin: 8px 0 0; font-weight: 500; }
+  .fuel { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .fuel li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; }
+  .row { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+  .fuel .name { font-size: 1.1rem; }
+  .fuel .val { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; color: var(--accent); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .fuel .val small { font-family: var(--font-body); font-weight: 600; font-size: .95rem; margin-left: 4px; }
+
+  /* Выбросы */
+  .chart { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px 14px; }
+  .chart-title { margin: 0 0 14px 12px; font-weight: 600; }
+  .bars { display: grid; gap: 6px; }
+  .bar-row { min-width: 0; padding: 10px 12px; border: 1px solid transparent; border-radius: 12px; }
+  .bar-label { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+  .bar-label span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+  .bar-row.is-atom .bar-label { font-weight: 700; color: var(--accent); }
+  .track { height: 14px; border-radius: 7px; background: var(--track); overflow: hidden; }
+  .fill { height: 100%; border-radius: 7px; min-width: 6px; }
+
+  /* Миф vs факт */
+  .pairs { display: grid; gap: 14px; }
+  .pair { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .pair > .myth, .pair > .fact { padding: 16px 20px; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: baseline; }
+  .pair .myth { background: var(--myth-soft); }
+  .pair .more p { padding: 14px 20px 16px; border-top: 1px solid var(--line); }
+  .tag { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; min-width: 3.6em; }
+  .myth .tag { color: var(--myth); }
+  .fact .tag { color: var(--accent); }
+  .myth p { margin: 0; font-weight: 600; }
+  .fact p { margin: 0; }
+
+  /* ---------- Нижнее меню ---------- */
+  .nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    background: var(--nav-bg);
+    padding: 8px max(10px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
+    box-shadow: 0 -1px 0 rgba(255,255,255,.08);
+  }
+  .nav ul { list-style: none; margin: 0 auto; padding: 0; max-width: 720px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .nav a {
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px;
+    min-height: 62px; padding: 8px 4px; border-radius: 12px;
+    color: var(--nav-text); text-decoration: none; text-align: center;
+    font-size: 12px; line-height: 1.2; font-weight: 500;
+    transition: background .15s, color .15s;
+  }
+  .nav a:hover { color: var(--nav-active); }
+  .nav a[aria-current="page"] { background: var(--nav-active-bg); color: var(--nav-active); }
+  .nav svg { width: 22px; height: 22px; flex: none; }
+  .nav a:focus-visible { outline-color: #ffffff; }
+
+  @media (min-width: 640px) { .nav a { font-size: 14px; flex-direction: row; justify-content: center; gap: 10px; min-height: 54px; } }
+  @media (prefers-reduced-motion: reduce) {
+    .atom { animation: none; }
+    .nav a { transition: none; }
+    .view:not([hidden]) { animation: none; }
+    .xp, .more { transition: none; }
+    .xp:focus-visible, .xp.open, .xp:hover { transform: none; }
+  }
+</style>
+
+<main>
+  <section class="view home" id="view-home" aria-labelledby="home-title">
+    <svg class="atom" viewBox="0 0 400 400" aria-hidden="true" focusable="false">
+      <g fill="none" stroke="#a8e6c6" stroke-opacity=".22" stroke-width="1.5">
+        <ellipse cx="200" cy="200" rx="190" ry="68"/>
+        <ellipse cx="200" cy="200" rx="190" ry="68" transform="rotate(60 200 200)"/>
+        <ellipse cx="200" cy="200" rx="190" ry="68" transform="rotate(120 200 200)"/>
+      </g>
+      <circle cx="200" cy="200" r="12" fill="#a8e6c6" fill-opacity=".45"/>
+      <circle cx="390" cy="200" r="7" fill="#a8e6c6" fill-opacity=".7"/>
+      <circle cx="105" cy="364" r="7" fill="#a8e6c6" fill-opacity=".7" />
+      <circle cx="105" cy="36" r="7" fill="#a8e6c6" fill-opacity=".7"/>
+    </svg>
+    <div class="home-inner">
+      <span class="eyebrow">Экологический навигатор</span>
+      <h1 id="home-title">Атомный навигатор</h1>
+      <div class="rule"></div>
+      <p class="tagline">Вся правда о самой чистой и эффективной энергии XXI века</p>
+      <p class="hint">Выберите раздел в меню внизу</p>
+      <p class="school">МАОУ СОШ №217 • 2026</p>
+    </div>
+  </section>
+
+  <section class="view" id="view-energy" hidden aria-labelledby="t-energy">
+    <a class="back" href="#home">← Атомный навигатор</a>
+    <div class="page-head"><h2 id="t-energy">Энергоплотность</h2></div>
+    <p class="lead">Главное преимущество уранового топлива — его колоссальная удельная энергоёмкость.</p>
+    <p class="tip">Наведите курсор или нажмите на блок, чтобы узнать подробнее.</p>
+    <div class="callout">
+      <div class="big">1 таблетка · 4,5 г</div>
+      <p>1 урановая таблетка (4,5 г) выделяет столько же энергии, сколько:</p>
+    </div>
+    <ul class="fuel">
+      <li class="xp" tabindex="0">
+        <div class="row"><span class="name">Уголь</span><span class="val">400<small>кг</small></span></div>
+        <div class="more"><div><p>Уголь остаётся одним из самых распространённых видов топлива для электростанций. Чтобы получить столько же энергии, сколько даёт одна урановая таблетка, нужно сжечь около 400 кг угля. При этом образуются углекислый газ и зола, которые приходится вывозить и хранить.</p></div></div>
+      </li>
+      <li class="xp" tabindex="0">
+        <div class="row"><span class="name">Нефть</span><span class="val">350<small>кг</small></span></div>
+        <div class="more"><div><p>Нефть используют и как топливо, и как сырьё для химической промышленности. Одной урановой таблетке по энергии соответствует около 350 кг нефти. Её добыча и перевозка требуют больших затрат, а при сжигании выделяется CO₂.</p></div></div>
+      </li>
+      <li class="xp" tabindex="0">
+        <div class="row"><span class="name">Природный газ</span><span class="val">360<small>м³</small></span></div>
+        <div class="more"><div><p>Природный газ считается самым чистым из ископаемых видов топлива. Но чтобы заменить одну урановую таблетку, его нужно около 360 м³. Такой объём займёт целую большую комнату.</p></div></div>
+      </li>
+    </ul>
+    <p class="foot-note">Минимальное изъятие ресурсов из природы</p>
+  </section>
+
+  <section class="view" id="view-emissions" hidden aria-labelledby="t-emissions">
+    <a class="back" href="#home">← Атомный навигатор</a>
+    <div class="page-head"><h2 id="t-emissions">Выбросы вредных веществ</h2></div>
+    <p class="lead">АЭС не сжигают органическое топливо и не выбрасывают парниковые газы при работе.</p>
+    <p class="tip">Наведите курсор или нажмите на строку, чтобы узнать подробнее.</p>
+    <div class="chart">
+      <p class="chart-title">Выбросы CO₂ (г/кВт·ч)</p>
+      <div class="bars">
+        <div class="bar-row xp" tabindex="0">
+          <div class="bar-label"><span>Угольная ТЭС</span><span>820 г</span></div>
+          <div class="track"><div class="fill" style="width:100%;background:var(--coal)"></div></div>
+          <div class="more"><div><p>Угольные станции дают самые высокие выбросы: 820 г CO₂ на каждый киловатт-час. При сжигании угля весь углерод превращается в углекислый газ. Кроме CO₂, в атмосферу попадают зола и другие вредные вещества.</p></div></div>
+        </div>
+        <div class="bar-row xp" tabindex="0">
+          <div class="bar-label"><span>Газовая ТЭС</span><span>490 г</span></div>
+          <div class="track"><div class="fill" style="width:59.76%;background:var(--gas)"></div></div>
+          <div class="more"><div><p>Газовая станция выбрасывает 490 г CO₂ на киловатт-час, это заметно меньше, чем у угольной. Газ горит чище угля, но всё равно остаётся органическим топливом. Выбросы продолжаются всё время, пока станция работает.</p></div></div>
+        </div>
+        <div class="bar-row xp" tabindex="0">
+          <div class="bar-label"><span>Солнце</span><span>48 г</span></div>
+          <div class="track"><div class="fill" style="width:5.85%;background:var(--sun)"></div></div>
+          <div class="more"><div><p>Для солнечной энергетики указано 48 г CO₂ на киловатт-час. Панели при работе ничего не сжигают. Выбросы связаны с производством оборудования и учитываются за весь жизненный цикл.</p></div></div>
+        </div>
+        <div class="bar-row is-atom xp" tabindex="0">
+          <div class="bar-label"><span>АЭС</span><span>12 г</span></div>
+          <div class="track"><div class="fill" style="width:1.46%;background:var(--atom)"></div></div>
+          <div class="more"><div><p>АЭС даёт всего 12 г CO₂ на киловатт-час, это самое низкое значение в сравнении. При работе реактор не сжигает топливо и не выбрасывает парниковые газы. Небольшой углеродный след связан со строительством станции и добычей топлива.</p></div></div>
+        </div>
+      </div>
+    </div>
+    <p class="foot-note">Самый низкий углеродный след в жизненном цикле</p>
+  </section>
+
+  <section class="view" id="view-myths" hidden aria-labelledby="t-myths">
+    <a class="back" href="#home">← Атомный навигатор</a>
+    <div class="page-head"><h2 id="t-myths">Миф vs факт</h2></div>
+    <p class="tip">Наведите курсор или нажмите на карточку, чтобы узнать подробнее.</p>
+    <div class="pairs">
+      <article class="pair xp" tabindex="0">
+        <div class="myth"><span class="tag">Миф</span><p>«Из труб идёт дым»</p></div>
+        <div class="fact"><span class="tag">Факт</span><p>Из градирен выходит чистый водяной пар без вредных веществ.</p></div>
+        <div class="more"><div><p>Белые клубы над АЭС — это водяной пар из градирен. Градирня охлаждает воду, которая забирает тепло у турбин, и часть этой воды испаряется. В реакторе ничего не сжигают, поэтому в паре нет продуктов горения.</p></div></div>
+      </article>
+      <article class="pair xp" tabindex="0">
+        <div class="myth"><span class="tag">Миф</span><p>«АЭС опаснее угля»</p></div>
+        <div class="fact"><span class="tag">Факт</span><p>Угольные ТЭС выбрасывают больше радионуклидов из угольной золы, чем АЭС.</p></div>
+        <div class="more"><div><p>В угле в малых количествах содержатся природные радиоактивные элементы, например уран и торий. При сжигании они остаются в золе, и часть из них уходит в атмосферу. Поэтому в обычном режиме работы угольная станция даёт больше радионуклидов, чем АЭС.</p></div></div>
+      </article>
+      <article class="pair xp" tabindex="0">
+        <div class="myth"><span class="tag">Миф</span><p>«Отходы повсюду»</p></div>
+        <div class="fact"><span class="tag">Факт</span><p>ОЯТ перерабатывается для создания нового топлива (МОКС).</p></div>
+        <div class="more"><div><p>Отработавшее ядерное топливо (ОЯТ) не выбрасывают, а отправляют на переработку. Из него выделяют уран и плутоний, которые подходят для изготовления нового топлива. Такое топливо называют МОКС, оно позволяет использовать ресурс повторно и уменьшает количество отходов.</p></div></div>
+      </article>
+    </div>
+    <p class="foot-note">Памятка разработана в рамках индивидуального проекта</p>
+  </section>
+</main>
+
+<nav class="nav" aria-label="Разделы">
+  <ul>
+    <li>
+      <a href="#energy" data-route="energy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>
+        <span>Энергоплотность</span>
+      </a>
+    </li>
+    <li>
+      <a href="#emissions" data-route="emissions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M6 20V11"/><path d="M12 20V5"/><path d="M18 20v-6"/></svg>
+        <span>Выбросы вредных веществ</span>
+      </a>
+    </li>
+    <li>
+      <a href="#myths" data-route="myths">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg>
+        <span>Миф vs факт</span>
+      </a>
+    </li>
+  </ul>
+</nav>
+
+<script>
+  (function () {
+    var routes = ["home", "energy", "emissions", "myths"];
+    var prevIndex = 0;
+    function route() {
+      var name = (location.hash || "").replace("#", "");
+      if (routes.indexOf(name) === -1) name = "home";
+      routes.forEach(function (r) {
+        document.getElementById("view-" + r).hidden = r !== name;
+      });
+      var idx = routes.indexOf(name);
+      document.body.style.setProperty("--dx", idx >= prevIndex ? "28px" : "-28px");
+      prevIndex = idx;
+      document.body.setAttribute("data-view", name);
+      document.querySelectorAll(".nav a").forEach(function (a) {
+        if (a.getAttribute("data-route") === name) a.setAttribute("aria-current", "page");
+        else a.removeAttribute("aria-current");
+      });
+      document.querySelectorAll(".xp.open").forEach(function (o) { o.classList.remove("open"); });
+      window.scrollTo(0, 0);
+    }
+    window.addEventListener("hashchange", route);
+    route();
+
+    /* На устройствах без наведения блок раскрывается по нажатию */
+    var touch = window.matchMedia("(hover: none)").matches;
+    document.querySelectorAll(".xp").forEach(function (el) {
+      el.addEventListener("click", function () {
+        if (!touch) return;
+        var wasOpen = el.classList.contains("open");
+        document.querySelectorAll(".xp.open").forEach(function (o) { o.classList.remove("open"); });
+        if (!wasOpen) el.classList.add("open");
+      });
+    });
+  })();
+</script>
+
+</body></html>
